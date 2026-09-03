@@ -1,0 +1,10 @@
+{
+  "id": "TC-TS-NEXTECH-001",
+  "name": "nextech homepage smoke test",
+  "metadata": { "executor": "playwright" },
+  "steps": [
+    { "action": "goto", "url": "https://www.nextech.com" },
+    { "action": "eval", "script": "(() => { const t = document.title || ''; const ok = t.toLowerCase().includes('nextech'); if (!ok) throw new Error('title does not include nextech: ' + t); return t; })()" },
+    { "action": "screenshot", "path": "artifacts/TC-TS-NEXTECH-001.png" }
+  ]
+}
