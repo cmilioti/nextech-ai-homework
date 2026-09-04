@@ -5,19 +5,40 @@ import { runFunctional, runPerformance, runSecurity } from "./executor";
 import { runFixture, runFixtureObject } from "./playwrightRunner";
 import { detectChanges } from "./changeDetector";
 import fs from 'fs';
-import { enqueueResult, startBackgroundFlusher } from './resultQueue';
+import { enqueueResult, startBackgroundFlusher, flushQueue } from './resultQueue';
 
 const BASE = process.env.TEST_API_URL || "http://localhost:8000";
+// SIMULATE_TMS_OFFLINE behavior: set SIMULATE_TMS_OFFLINE=1 to simulate offline.
+// Optionally set SIMULATE_TMS_OFFLINE_TIMEOUT (seconds) to have the simulation expire.
+const SIMULATE_OFFLINE_FLAG = process.env.SIMULATE_TMS_OFFLINE === '1';
+const SIMULATE_OFFLINE_TIMEOUT = parseInt(process.env.SIMULATE_TMS_OFFLINE_TIMEOUT || '0', 10);
+const SIMULATE_OFFLINE_UNTIL = SIMULATE_OFFLINE_FLAG ? (SIMULATE_OFFLINE_TIMEOUT > 0 ? Date.now() + SIMULATE_OFFLINE_TIMEOUT * 1000 : Infinity) : 0;
+
+function isSimulatedOffline() {
+  if (!SIMULATE_OFFLINE_FLAG) return false;
+  if (SIMULATE_OFFLINE_UNTIL === Infinity) return true;
+  const now = Date.now();
+  const still = now < SIMULATE_OFFLINE_UNTIL;
+  if (!still) console.log('[simulate] SIMULATE_TMS_OFFLINE timeout expired');
+  return still;
+}
+
+function logTmsAppearsOffline(reason?: string) {
+  const msg = reason ? `${reason}` : 'no reason provided';
+  console.warn(`[tms] appears offline — ${msg}`);
+}
 
 async function fetchTests(): Promise<TestCase[]> {
-  if (process.env.SIMULATE_TMS_OFFLINE === '1') {
+  if (isSimulatedOffline()) {
     throw new Error('Simulated TMS offline');
   }
   try {
     const r = await axios.get(`${BASE}/tests`, { timeout: 5000 });
     return r.data as TestCase[];
   } catch (e) {
-    throw new Error('Failed to fetch tests from TMS: ' + ((e as any)?.message || e));
+    const msg = (e as any)?.message || e;
+    logTmsAppearsOffline(String(msg));
+    throw new Error('Failed to fetch tests from TMS: ' + msg);
   }
 }
 
@@ -25,14 +46,16 @@ async function publishResult(res: ExecutionResult) {
   // Simple PUT to update test with a result field
   const payload = { status: res.passed ? "passed" : "failed", lastRun: { passed: res.passed, logs: res.logs } };
   try {
-    if (process.env.SIMULATE_TMS_OFFLINE === '1') {
-      console.warn('SIMULATE_TMS_OFFLINE=1 — enqueueing publish for', res.testId);
+    if (isSimulatedOffline()) {
+      console.warn('SIMULATE_TMS_OFFLINE active — enqueueing publish for', res.testId);
       enqueueResult(res);
       return;
     }
     await axios.put(`${BASE}/tests/${res.testId}`, payload, { timeout: 5000 });
   } catch (e) {
-    console.error("Failed to publish result — enqueueing for retry", (e as any)?.message || e);
+    const msg = (e as any)?.message || e;
+    logTmsAppearsOffline(String(msg));
+    console.error("Failed to publish result — enqueueing for retry", msg);
     try { enqueueResult(res); } catch (err) { console.error('Failed to enqueue result', err); }
   }
 }
@@ -40,6 +63,24 @@ async function publishResult(res: ExecutionResult) {
 async function runAgent() {
   // start background flusher to retry queued results
   const stopFlusher = startBackgroundFlusher(BASE, 30000);
+
+  if (SIMULATE_OFFLINE_FLAG) {
+    if (SIMULATE_OFFLINE_TIMEOUT > 0) {
+      console.log(`[simulate] SIMULATE_TMS_OFFLINE enabled for ${SIMULATE_OFFLINE_TIMEOUT}s`);
+      // Schedule an immediate flush attempt once the offline simulation expires
+      setTimeout(async () => {
+        try {
+          console.log('[simulate] timeout expired — attempting immediate flush of queued results');
+          const n = await flushQueue(BASE);
+          console.log(`[simulate] immediate flush result: ${n} item(s) delivered`);
+        } catch (e) {
+          console.warn('[simulate] immediate flush failed:', (e as any)?.message || e);
+        }
+      }, SIMULATE_OFFLINE_TIMEOUT * 1000);
+    } else {
+      console.log('[simulate] SIMULATE_TMS_OFFLINE enabled (no timeout)');
+    }
+  }
 
   // If REPO_URL or REPO_PATH provided, detect changes and select tests accordingly
   const repoUrl = process.env.REPO_URL;

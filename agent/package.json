@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "ts-node src/index.ts",
+    "flush": "ts-node src/flush.ts",
     "build": "tsc",
     "lint": "echo 'lint placeholder'"
   },
