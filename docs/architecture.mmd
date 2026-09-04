@@ -1,21 +1,25 @@
-flowchart LR
+flowchart TB
+  %% Top-to-bottom layout prevents overlapping link labels
   A[Agent]
-  T[TMS API]
   C[Change Detector]
   L[LLM Decision]
   P[Playwright / Executor]
+  T[TMS API]
   Q[Offline Queue]
 
-  A -->|fetch tests| T
   A -->|analyze changes| C
   C -->|types| A
+
+  A -->|fetch tests| T
   A -->|decide| L
   L -->|strategy| A
+
   A -->|run| P
   P -->|result| A
+
   A -->|publish| T
   A -->|enqueue on failure| Q
-  Q -->|retry/flush| T
+  Q -->|retry / flush| T
 
   %% Labels: Execution flow -> run, Publishing flow -> publish
 
