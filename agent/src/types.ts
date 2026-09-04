@@ -12,4 +12,9 @@ export type ExecutionResult = {
   passed: boolean;
   logs?: string;
   evidence?: any;
+  // queue metadata (added for offline retry handling)
+  queuedAt?: string;
+  attempts?: number;
+  lastAttemptAt?: string;
+  timedOutAt?: string;
 };

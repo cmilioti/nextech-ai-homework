@@ -4,12 +4,15 @@ import axios from 'axios';
 import { ExecutionResult } from './types';
 
 const QUEUE_FILE = path.join(__dirname, '..', 'offline_queue.json');
+const DEAD_LETTER_FILE = path.join(__dirname, '..', 'offline_queue_deadletter.json');
+const MAX_ATTEMPTS = parseInt(process.env.QUEUE_MAX_ATTEMPTS || '2', 10);
+const DEAD_LETTER_WEBHOOK = process.env.DEAD_LETTER_WEBHOOK || '';
 
 function loadQueue(): ExecutionResult[] {
   try {
     if (!fs.existsSync(QUEUE_FILE)) return [];
     const raw = fs.readFileSync(QUEUE_FILE, 'utf-8');
-    const items = JSON.parse(raw) as ExecutionResult[];
+    const items = JSON.parse(raw) as any[];
     console.log(`[queue] loaded ${items.length} item(s) from ${QUEUE_FILE}`);
     return items;
   } catch (e) {
@@ -32,7 +35,7 @@ function saveQueue(items: ExecutionResult[]) {
 
 export function enqueueResult(res: ExecutionResult) {
   const q = loadQueue();
-  const record = { ...res, queuedAt: new Date().toISOString() } as any;
+  const record = { ...res, queuedAt: new Date().toISOString(), attempts: 0 } as any;
   q.push(record);
   saveQueue(q);
   console.log(`[queue] enqueued result for ${res.testId} (queue size=${q.length})`);
@@ -44,7 +47,17 @@ export async function flushQueue(baseUrl: string): Promise<number> {
   console.log(`[queue] Attempting to flush ${q.length} queued result(s) to ${baseUrl}`);
   let success = 0;
   const remaining: ExecutionResult[] = [];
+  const dead: any[] = [];
   for (const item of q) {
+    // skip items that exceeded max attempts
+    if (item.attempts && item.attempts >= MAX_ATTEMPTS) {
+      console.warn(`[queue] item ${item.testId} exceeded max attempts (${item.attempts}) — moving to dead-letter`);
+      dead.push({ ...item, timedOutAt: new Date().toISOString() });
+      continue;
+    }
+    // increment attempt count and note attempt time
+    item.attempts = (item.attempts || 0) + 1;
+    item.lastAttemptAt = new Date().toISOString();
     const payload = { status: item.passed ? 'passed' : 'failed', lastRun: { passed: item.passed, logs: item.logs } };
     try {
       await axios.put(`${baseUrl}/tests/${item.testId}`, payload, { timeout: 5000 });
@@ -56,6 +69,28 @@ export async function flushQueue(baseUrl: string): Promise<number> {
     }
   }
   saveQueue(remaining as any);
+  // append dead-letter items to dead-letter file for inspection
+  if (dead.length > 0) {
+    try {
+      const existing = fs.existsSync(DEAD_LETTER_FILE) ? JSON.parse(fs.readFileSync(DEAD_LETTER_FILE, 'utf-8')) : [];
+      const merged = existing.concat(dead);
+      fs.writeFileSync(DEAD_LETTER_FILE, JSON.stringify(merged, null, 2), 'utf-8');
+      console.log(`[queue] moved ${dead.length} item(s) to ${DEAD_LETTER_FILE}`);
+    } catch (e) {
+      console.error('[queue] failed to write dead-letter file:', (e as any)?.message || e);
+    }
+    // If a webhook is configured, notify it about the dead-lettered items.
+    if (DEAD_LETTER_WEBHOOK) {
+      try {
+        const payload = { source: 'agent', timestamp: new Date().toISOString(), items: dead };
+        axios.post(DEAD_LETTER_WEBHOOK, payload, { timeout: 5000 })
+          .then(() => console.log(`[queue] notified dead-letter webhook at ${DEAD_LETTER_WEBHOOK}`))
+          .catch((err) => console.error('[queue] dead-letter webhook POST failed:', (err as any)?.message || err));
+      } catch (e) {
+        console.error('[queue] error sending dead-letter webhook:', (e as any)?.message || e);
+      }
+    }
+  }
   console.log(`[queue] flush complete: ${success} flushed, ${remaining.length} remaining`);
   return success;
 }

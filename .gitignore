@@ -1,0 +1,37 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# FastAPI runtime / data
+data/tests.bin
+data/*.bin
+.env
+
+# Node / agent
+node_modules/
+agent/node_modules/
+agent/dist/
+agent/.cache/
+agent/offline_queue.json
+agent/offline_queue_deadletter.json
+agent/*.log
+
+# Playwright browser caches
+**/.cache/ms-playwright
+.cache/ms-playwright
+
+# Editor / OS
+.vscode/
+*.swp
+.DS_Store
+
+# Logs and temp
+*.log
+tmp/
+temp/
+
+# Work documents for instructions
+*.docx  

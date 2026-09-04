@@ -67,12 +67,16 @@ def get_test(test_id: str):
 
 @app.put("/tests/{test_id}")
 async def update_test(test_id: str, request: Request):
-    if test_id not in tests_store:
-        raise HTTPException(status_code=404, detail="Test not found")
     payload = await request.json()
-    # Merge payload into existing test record
-    tests_store[test_id].update(payload)
-    tests_store[test_id]["id"] = test_id
+    # If the test does not exist, create a new record (upsert).
+    if test_id not in tests_store:
+        data = payload.copy() if isinstance(payload, dict) else {}
+        data["id"] = test_id
+        tests_store[test_id] = data
+    else:
+        # Merge payload into existing test record
+        tests_store[test_id].update(payload)
+        tests_store[test_id]["id"] = test_id
     _save_store()
     return tests_store[test_id]
 

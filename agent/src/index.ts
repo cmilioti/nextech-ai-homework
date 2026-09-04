@@ -13,6 +13,7 @@ const BASE = process.env.TEST_API_URL || "http://localhost:8000";
 const SIMULATE_OFFLINE_FLAG = process.env.SIMULATE_TMS_OFFLINE === '1';
 const SIMULATE_OFFLINE_TIMEOUT = parseInt(process.env.SIMULATE_TMS_OFFLINE_TIMEOUT || '0', 10);
 const SIMULATE_OFFLINE_UNTIL = SIMULATE_OFFLINE_FLAG ? (SIMULATE_OFFLINE_TIMEOUT > 0 ? Date.now() + SIMULATE_OFFLINE_TIMEOUT * 1000 : Infinity) : 0;
+const VERBOSE = process.env.VERBOSE_AGENT === '1';
 
 function isSimulatedOffline() {
   if (!SIMULATE_OFFLINE_FLAG) return false;
@@ -145,7 +146,9 @@ async function runAgent() {
 
       // Fixture files are no longer auto-detected — inline `steps` are preferred.
 
-      const strategy = await decideExecutionStrategy(`${t.title} ${t.description || ""} ${t.typeOfTest || ""}`);
+      const prompt = `${t.title} ${t.description || ""} ${t.typeOfTest || ""}`.trim();
+      if (VERBOSE) console.log('[verbose] strategy prompt ->', prompt);
+      const strategy = await decideExecutionStrategy(prompt);
       console.log(`Decided strategy: ${strategy}`);
       let result: ExecutionResult;
       if (strategy.includes("performance")) result = await runPerformance(t.id);
