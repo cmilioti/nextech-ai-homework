@@ -132,6 +132,37 @@ async function runAgent() {
     console.error('Unable to retrieve tests from TMS — aborting run:', (e as any)?.message || e);
     return;
   }
+  // Sampling / run mode
+  // RUN_MODE=all (default) -> run all selected tests
+  // RUN_MODE=sample -> randomly pick up to SAMPLE_SIZE tests per decided strategy
+  const RUN_MODE = process.env.RUN_MODE || 'all';
+  const SAMPLE_SIZE = parseInt(process.env.SAMPLE_SIZE || '3', 10);
+  const testStrategyMap: Record<string, string> = {};
+  if (RUN_MODE === 'sample') {
+    console.log('[agent] RUN_MODE=sample — selecting random samples per strategy');
+    const stratBuckets: Record<string, TestCase[]> = {};
+    for (const t of tests) {
+      const prompt = `${t.title} ${t.description || ""} ${t.typeOfTest || ""}`.trim();
+      // decide strategy for bucketing (reuse later if possible)
+        const strat = testStrategyMap[t.id] ?? await decideExecutionStrategy(prompt);
+      testStrategyMap[t.id] = strat;
+      if (!stratBuckets[strat]) stratBuckets[strat] = [];
+      stratBuckets[strat].push(t);
+    }
+
+    const selected: TestCase[] = [];
+    for (const strat of Object.keys(stratBuckets)) {
+      const arr = stratBuckets[strat];
+      // shuffle
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      selected.push(...arr.slice(0, SAMPLE_SIZE));
+    }
+    console.log(`[agent] selected ${selected.length} tests across ${Object.keys(stratBuckets).length} strategies`);
+    tests = selected;
+  }
   for (const t of tests) {
     try {
       console.log(`Processing ${t.id}: ${t.title}`);
@@ -148,7 +179,7 @@ async function runAgent() {
 
       const prompt = `${t.title} ${t.description || ""} ${t.typeOfTest || ""}`.trim();
       if (VERBOSE) console.log('[verbose] strategy prompt ->', prompt);
-      const strategy = await decideExecutionStrategy(prompt);
+        const strategy = testStrategyMap[t.id] ?? await decideExecutionStrategy(prompt);
       console.log(`Decided strategy: ${strategy}`);
       let result: ExecutionResult;
       if (strategy.includes("performance")) result = await runPerformance(t.id);

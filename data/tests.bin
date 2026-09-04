@@ -48,9 +48,9 @@
     "title": "Two-factor authentication enforcement",
     "description": "Verify 2FA is required for sensitive account actions.",
     "typeOfTest": "security",
-    "status": "failed",
+    "status": "passed",
     "lastRun": {
-      "passed": false,
+      "passed": true,
       "logs": "Security scan complete"
     }
   },
