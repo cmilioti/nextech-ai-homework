@@ -1,22 +1,32 @@
 flowchart TB
-  %% Top-to-bottom layout prevents overlapping link labels
+  %% Use explicit action nodes to avoid overlapping edge labels
   A[Agent]
   C[Change Detector]
+  Types((Types))
+  Analyze[/Analyze changes/]
+  Decide[/Decide strategy/]
   L[LLM Decision]
   P[Playwright / Executor]
   T[TMS API]
   Q[Offline Queue]
 
-  A -->|analyze changes| C
-  C -->|types| A
+  %% Analyze path (Agent -> Analyze -> Change Detector -> Types -> Agent)
+  A --> Analyze
+  Analyze --> C
+  C --> Types
+  Types --> A
 
+  %% Fetch and decision paths
   A -->|fetch tests| T
-  A -->|decide| L
+  A --> Decide
+  Decide --> L
   L -->|strategy| A
 
+  %% Execution and results
   A -->|run| P
   P -->|result| A
 
+  %% Publishing and queue
   A -->|publish| T
   A -->|enqueue on failure| Q
   Q -->|retry / flush| T

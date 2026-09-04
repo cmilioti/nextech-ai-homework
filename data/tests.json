@@ -54,4 +54,17 @@
       { "action": "eval", "script": "(()=>{ return document.body.innerText.toLowerCase().includes('two-factor') })()" }
     ]
   }
+  ,
+  "TC-TS-NEXTECH-001": {
+    "id": "TC-TS-NEXTECH-001",
+    "title": "nextech homepage smoke test",
+    "description": "Smoke test for nextech homepage used by demo fixtures",
+    "typeOfTest": "functional",
+    "status": "ready",
+    "steps": [
+      { "action": "goto", "url": "https://www.nextech.com" },
+      { "action": "eval", "script": "(() => { const t = document.title || ''; const ok = t.toLowerCase().includes('nextech'); if (!ok) throw new Error('title does not include nextech: ' + t); return t; })()" },
+      { "action": "screenshot", "path": "artifacts/TC-TS-NEXTECH-001.png" }
+    ]
+  }
 }
