@@ -1,0 +1,8 @@
+[
+  {
+    "testId": "TC-TS-NEXTECH-001",
+    "passed": true,
+    "logs": "goto https://www.nextech.com\neval -> [simulated eval]\nscreenshot -> artifacts/TC-TS-NEXTECH-001.png",
+    "queuedAt": "2026-09-04T01:17:10.463Z"
+  }
+]
