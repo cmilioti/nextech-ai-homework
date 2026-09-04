@@ -36,6 +36,17 @@ npx playwright install --with-deps
 npx ts-node src/index.ts
 ```
 
+Important: start the TMS before running the agent. The TMS default in this repo is `http://localhost:8000`, but for demos you may run it on another port (example below). If you run the TMS on a non-default port, set `TEST_API_URL` when starting the agent:
+
+```bash
+# start the TMS on port 8001
+uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
+
+# then start the agent pointing at that URL
+cd agent
+TEST_API_URL=http://127.0.0.1:8001 npx ts-node src/index.ts
+```
+
 ## Project structure
 
 - `app/` — FastAPI mock Test Management System (TMS) and Jira stub
@@ -70,6 +81,13 @@ Key environment variables (agent):
 - `RUN_FIXTURE` — path to a local fixture JSON to run once and publish the result.
 - `REPO_URL` / `REPO_PATH`, `BASE_REF` / `HEAD_REF` — for change detection and selective test runs.
 
+Additional useful environment variables:
+- `VERBOSE_AGENT=1` — print verbose strategy/decision logs useful when debugging heuristics or LLM prompts.
+- `RUN_MODE=sample|all` — `sample` runs a sampled subset per strategy (useful for quick demos), `all` runs everything.
+- `SAMPLE_SIZE` — when `RUN_MODE=sample`, the number of tests to pick per strategy.
+- `QUEUE_MAX_ATTEMPTS` — maximum delivery attempts before moving an item to the dead-letter queue (default shown in code).
+- `DEAD_LETTER_WEBHOOK` — optional webhook URL to notify when items are moved to the dead-letter file.
+
 ## Playwright runner
 
 - The Playwright runner supports `goto`, `eval`, and `screenshot` step actions inside fixtures. Example fixture: `tests/fixtures/test_case.json`.
@@ -78,6 +96,13 @@ Key environment variables (agent):
 ```bash
 cd agent
 npx ts-node src/playwrightRunner.ts ../tests/fixtures/test_case.json
+```
+
+Note about Playwright native dependencies: some hosts (especially minimal Debian/Ubuntu images) may be missing shared libraries like `libnspr4`/`libnss3` that Chromium needs. For local demos use `SKIP_PLAYWRIGHT=1` to simulate runs quickly, or run the agent inside a container that already includes Playwright deps. Example (Docker):
+
+```bash
+# from repo root -- runs agent in Node container with host networking
+docker run --rm --network=host -v "$PWD":/work -w /work/agent node:22-bullseye bash -lc "npm install && npx playwright install --with-deps && TEST_API_URL=http://127.0.0.1:8001 npx ts-node src/index.ts"
 ```
 
 ## Offline handling and retries
@@ -95,6 +120,17 @@ npm run flush
 npx ts-node src/flush.ts
 ```
 
+If you ran the TMS on a custom port, include `TEST_API_URL` in the flush command. Example:
+
+```bash
+cd agent
+TEST_API_URL=http://127.0.0.1:8001 npm run flush
+# or
+TEST_API_URL=http://127.0.0.1:8001 npx ts-node src/flush.ts
+```
+
+Behavior notes: items that exceed `QUEUE_MAX_ATTEMPTS` are moved to `agent/offline_queue_deadletter.json`. Inspect that file for failed items and (optionally) use `DEAD_LETTER_WEBHOOK` to receive notifications when this happens.
+
 ## Development notes
 
 - Node: use Node 26 for best compatibility with Playwright in this repo.
@@ -111,6 +147,23 @@ npx ts-node src/flush.ts
 - Add CI workflow for running tests and linting.
 - Persist per-item retry counts and drop policy for the offline queue.
 - Add more robust LLM integration (Copilot SDK) behind a feature flag.
+
+## Assumptions & Tradeoffs
+
+- **Assumptions:**
+	- This repository is a demo/stub Test Management System intended for local development and demos, not a hardened production service.
+	- Contributors will run the agent in simulated mode (`SKIP_PLAYWRIGHT=1`) for quick iteration, or in a container that provides Playwright browser dependencies.
+	- Test identifiers are expected to be stable between the TMS and agent; the agent updates tests via `PUT /tests/{id}`.
+
+- **Tradeoffs:**
+	- Simulation vs. real browsers: `SKIP_PLAYWRIGHT` makes demos fast and low-friction but may hide browser-specific failures that only appear in full Playwright runs.
+	- PUT upsert behavior (agent can create/update tests) is forgiving for demos but may mask contract mismatches that a stricter API would catch.
+	- Native Playwright dependencies complicate local setup; the repo favors simulation and documents Docker/container alternatives to avoid altering host packages.
+	- LLM integration is a placeholder to keep the repo runnable without credentials; integrating a real SDK requires secret management and additional error handling.
+
+- **Operational notes:**
+	- The offline queue persists results to `agent/offline_queue.json` and retries delivery; items exceeding `QUEUE_MAX_ATTEMPTS` are moved to `agent/offline_queue_deadletter.json` for manual inspection.
+	- Logs are console-based for simplicity; consider structured logging and metrics if this becomes a long-running service.
 
 ## Additional docs
 
