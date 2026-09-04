@@ -1,0 +1,57 @@
+{
+  "TST-001": {
+    "id": "TST-001",
+    "title": "Login with valid credentials",
+    "description": "Verify user can log in with valid username and password.",
+    "typeOfTest": "functional",
+    "status": "ready",
+    "steps": [
+      { "action": "goto", "url": "https://example.com" },
+      { "action": "eval", "script": "(() => { const t = document.title || ''; const ok = t.toLowerCase().includes('example'); if (!ok) throw new Error('title check failed:' + t); return t; })()" }
+    ]
+  },
+  "TST-002": {
+    "id": "TST-002",
+    "title": "Password recovery flow",
+    "description": "Ensure password reset emails are sent and tokens expire correctly.",
+    "typeOfTest": "integration",
+    "status": "draft",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/forgot" },
+      { "action": "eval", "script": "(()=>{ return document.querySelectorAll('input[type=email]').length })()" }
+    ]
+  },
+  "TST-003": {
+    "id": "TST-003",
+    "title": "Load dashboard under heavy load",
+    "description": "Measure response time for dashboard rendering with 1000 concurrent users.",
+    "typeOfTest": "performance",
+    "status": "todo",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/dashboard" },
+      { "action": "eval", "script": "(()=>{ return document.body ? true : false })()" }
+    ]
+  },
+  "TST-004": {
+    "id": "TST-004",
+    "title": "Data export CSV format",
+    "description": "Validate exported CSV columns and escaping rules.",
+    "typeOfTest": "regression",
+    "status": "ready",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/export" },
+      { "action": "eval", "script": "(()=>{ return !!document.querySelector('#export') })()" }
+    ]
+  },
+  "TST-005": {
+    "id": "TST-005",
+    "title": "Two-factor authentication enforcement",
+    "description": "Verify 2FA is required for sensitive account actions.",
+    "typeOfTest": "security",
+    "status": "in-review",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/settings" },
+      { "action": "eval", "script": "(()=>{ return document.body.innerText.toLowerCase().includes('two-factor') })()" }
+    ]
+  }
+}

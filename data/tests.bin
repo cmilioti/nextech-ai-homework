@@ -1,0 +1,57 @@
+{
+  "TST-001": {
+    "id": "TST-001",
+    "title": "Login with valid credentials",
+    "description": "Verify user can log in with valid username and password.",
+    "typeOfTest": "functional",
+    "status": "passed",
+    "lastRun": {
+      "passed": true,
+      "logs": "Functional test passed"
+    }
+  },
+  "TST-002": {
+    "id": "TST-002",
+    "title": "Password recovery flow",
+    "description": "Ensure password reset emails are sent and tokens expire correctly.",
+    "typeOfTest": "integration",
+    "status": "passed",
+    "lastRun": {
+      "passed": true,
+      "logs": "Functional test passed"
+    }
+  },
+  "TST-003": {
+    "id": "TST-003",
+    "title": "Load dashboard under heavy load",
+    "description": "Measure response time for dashboard rendering with 1000 concurrent users.",
+    "typeOfTest": "performance",
+    "status": "failed",
+    "lastRun": {
+      "passed": false,
+      "logs": "Performance metrics collected"
+    }
+  },
+  "TST-004": {
+    "id": "TST-004",
+    "title": "Data export CSV format",
+    "description": "Validate exported CSV columns and escaping rules.",
+    "typeOfTest": "regression",
+    "status": "passed",
+    "lastRun": {
+      "passed": true,
+      "logs": "Functional test passed"
+    }
+  },
+  "TST-005": {
+    "id": "TST-005",
+    "title": "Two-factor authentication enforcement",
+    "description": "Verify 2FA is required for sensitive account actions.",
+    "typeOfTest": "security",
+    "status": "failed",
+    "lastRun": {
+      "passed": false,
+      "logs": "Security scan complete"
+    }
+  }
+}

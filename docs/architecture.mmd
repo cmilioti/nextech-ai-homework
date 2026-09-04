@@ -1,0 +1,37 @@
+```mermaid
+flowchart LR
+  subgraph Agent
+    A[Agent Orchestrator]
+  end
+
+  subgraph Tools
+    CD[ChangeDetector]
+    LLM[LLM / Copilot SDK (decision)]
+    PW[Playwright / Executor]
+    Q[Offline Queue / Flusher]
+  end
+
+  subgraph TMS["Test Management System (API)"]
+    TMS_GET[GET /tests]
+    TMS_PUT[PUT /tests/{id}]
+    JIRA[Jira Integration]
+  end
+
+  A -->|fetch tests| TMS_GET
+  TMS_GET --> A
+  A -->|analyze repo changes| CD
+  CD -->|inferred test types| A
+  A -->|decide execution strategy| LLM
+  LLM -->|strategy| A
+  A -->|execute test steps| PW
+  PW -->|execution result| A
+  A -->|publish result| TMS_PUT
+  TMS_PUT -->|optionally create/link issue| JIRA
+  A -->|enqueue on failure| Q
+  Q -->|flush retries| TMS_PUT
+
+  %% Annotations
+  A -. "Execution flow" .-> PW
+  A -. "Result publishing flow" .-> TMS_PUT
+  Q -. "Retry/flush flow" .-> TMS_PUT
+```

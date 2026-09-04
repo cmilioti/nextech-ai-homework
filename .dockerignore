@@ -1,0 +1,9 @@
+__pycache__/
+node_modules/
+dist/
+.venv/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+data/tests.bin

@@ -1,0 +1,21 @@
+version: "3.8"
+services:
+  api:
+    build: .
+    container_name: test-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  agent:
+    build:
+      context: .
+      dockerfile: agent/Dockerfile
+    container_name: test-agent
+    depends_on:
+      - api
+    environment:
+      - TEST_API_URL=http://api:8000
+    restart: "no"
