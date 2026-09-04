@@ -169,3 +169,4 @@ Behavior notes: items that exceed `QUEUE_MAX_ATTEMPTS` are moved to `agent/offli
 
 - Agent specifics: see `agent/README.md` for detailed examples and advanced usage.
 - API tests: see `tests/` for pytest-based API tests.
+- Architecture Diagram: `docs/architecture.mmd`
