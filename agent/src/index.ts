@@ -29,6 +29,9 @@ function logTmsAppearsOffline(reason?: string) {
 }
 
 async function fetchTests(): Promise<TestCase[]> {
+  // [Requirement] Retrieve test cases from the Test Management System (TMS).
+  // This function is the single place where the agent fetches available test
+  // definitions and metadata from the remote test management platform.
   if (isSimulatedOffline()) {
     throw new Error('Simulated TMS offline');
   }
@@ -51,10 +54,15 @@ async function publishResult(res: ExecutionResult) {
       enqueueResult(res);
       return;
     }
+    // [Requirement] Publish results back to the Test Management System (TMS).
+    // Successful PUT updates the test item with the latest status and logs.
     await axios.put(`${BASE}/tests/${res.testId}`, payload, { timeout: 5000 });
   } catch (e) {
     const msg = (e as any)?.message || e;
     logTmsAppearsOffline(String(msg));
+    // [Requirement] Handle failures gracefully: when publishing to the TMS
+    // fails (network error, offline, etc.), enqueue the result locally for
+    // retry by the background flusher so no test result is lost.
     console.error("Failed to publish result — enqueueing for retry", msg);
     try { enqueueResult(res); } catch (err) { console.error('Failed to enqueue result', err); }
   }

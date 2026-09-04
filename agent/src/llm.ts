@@ -5,6 +5,9 @@ import axios from "axios";
 // without external credentials while showing where Copilot integration would go.
 
 export async function decideExecutionStrategy(prompt: string): Promise<string> {
+  // [Requirement] Select the appropriate execution tool/strategy.
+  // This is the single place where we map test metadata (title, description,
+  // type) to a decided runner (functional, performance, security, etc.).
   // If COPILOT_API_KEY is provided, user intends to use the Copilot SDK.
   if (process.env.COPILOT_API_KEY) {
     // Placeholder: require('@copilot/sdk') and call it here.

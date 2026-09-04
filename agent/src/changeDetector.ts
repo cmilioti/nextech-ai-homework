@@ -60,6 +60,10 @@ export async function detectChanges(options: { repoUrl?: string; repoPath?: stri
     const t = inferTypeFromPath(f);
     if (t) types.add(t);
   }
+  // [Requirement] Analyze test case metadata and execution requirements.
+  // We infer which kinds of tests are relevant from changed file paths so
+  // the agent can select and prioritize matching tests (e.g. performance,
+  // security, functional) without running everything.
 
   const result: ChangeDetectionResult = { changedFiles: changed, inferredTestTypes: Array.from(types), repoPath: workdir };
 

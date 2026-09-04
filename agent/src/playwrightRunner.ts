@@ -80,6 +80,9 @@ export async function runFixture(fixturePath: string): Promise<ExecutionResult> 
 }
 
 export async function runFixtureObject(fixture: Fixture): Promise<ExecutionResult> {
+  // [Requirement] Execute the test: Playwright-based execution for inline
+  // steps. This function performs the active test actions against the system
+  // under test (navigation, evaluation, screenshots, etc.).
   const testId = fixture.id || `inline-${Date.now()}`;
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
@@ -117,6 +120,10 @@ export async function runFixtureObject(fixture: Fixture): Promise<ExecutionResul
 
   await browser.close();
 
+  // [Requirement] Capture execution results and produce useful logs/status
+  // information. We aggregate step-level logs into a single `logs` string
+  // and return `passed` to indicate overall result, which the agent will
+  // publish back to the TMS (or enqueue on failure).
   return { testId, passed, logs: logs.join('\n') };
 }
 

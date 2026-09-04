@@ -21,6 +21,9 @@ function loadQueue(): ExecutionResult[] {
 function saveQueue(items: ExecutionResult[]) {
   try {
     fs.writeFileSync(QUEUE_FILE, JSON.stringify(items, null, 2), 'utf-8');
+    // [Requirement] Produce useful execution logs and status information.
+    // Persisting the queue and logging its size gives operators visibility
+    // into outstanding results waiting for delivery to the TMS.
     console.log(`[queue] saved ${items.length} item(s) to ${QUEUE_FILE}`);
   } catch (e) {
     console.error('[queue] Failed to save offline queue:', (e as any)?.message || e);
