@@ -38,11 +38,21 @@ npx ts-node src/index.ts
 
 ## Project structure
 
-- `app/` — FastAPI mock TMS: `main.py`, `jira.py`.
-- `agent/` — TypeScript agent: `src/` contains `index.ts`, `playwrightRunner.ts`, `changeDetector.ts`, `resultQueue.ts`.
-- `data/` — source test definitions and runtime persistent file.
-- `tests/` — pytest tests and fixture JSON files.
-- `Makefile` — convenience targets (`run-api`, `run-agent-playwright`, `test`).
+- `app/` — FastAPI mock Test Management System (TMS) and Jira stub
+	- `app/main.py`: the FastAPI application that implements the mock TMS. Key routes used by the agent:
+		- `GET /tests` — list available tests
+		- `POST /tests` — create a new test definition
+		- `GET /tests/{id}` — retrieve a single test
+		- `PUT /tests/{id}` — update a test (used by the agent to publish execution results)
+		- `POST /tests/{id}/link-to-jira` — create a linked Jira issue for a test (uses the mock connector)
+	- `app/jira.py`: `MockJira` connector that emulates creating/listing Jira issues for demo purposes.
+	- Persistence: the TMS loads seeded tests from `data/tests.json` and persists runtime state to `data/tests.bin`.
+
+- `agent/` — TypeScript agent that orchestrates fetching tests from the TMS, deciding execution strategy, running tests (Playwright or simulated), and publishing results. Source files are under `agent/src/` (e.g., `index.ts`, `playwrightRunner.ts`, `changeDetector.ts`, `resultQueue.ts`).
+- `data/` — source test definitions (`tests.json`) and the runtime persisted store (`tests.bin`).
+- `tests/` — pytest-based API tests and fixture JSON files used for local validation (e.g., `tests/fixtures/test_case.json`).
+- `docs/` — diagrams and other documentation (e.g., `docs/architecture.mmd`).
+- `Makefile` — convenience targets such as `run-api`, `run-agent-playwright`, and `test`.
 
 ## Agent overview
 
