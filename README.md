@@ -170,3 +170,6 @@ Behavior notes: items that exceed `QUEUE_MAX_ATTEMPTS` are moved to `agent/offli
 - Agent specifics: see `agent/README.md` for detailed examples and advanced usage.
 - API tests: see `tests/` for pytest-based API tests.
 - Architecture Diagram: `docs/architecture.mmd`
+
+## Binary Note
+`artifacts/ANY` would not normally be included in a repo, but is included here as a place holder for test evidence. This would normally be stored in a binary repostitory manager like Artifactory.
